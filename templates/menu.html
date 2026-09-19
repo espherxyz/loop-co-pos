@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Menu — {{ cfg.shop_name }}</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Ccircle cx='12' cy='12' r='11' fill='%231B2E1B'/%3E%3Ccircle cx='12' cy='12' r='7' fill='none' stroke='%23C2A05A' stroke-width='2'/%3E%3Ccircle cx='12' cy='12' r='3' fill='%23C2A05A'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/menu.css') }}">
+</head>
+<body>
+
+<header class="hero">
+  <span class="glyph" aria-hidden="true">
+    <svg width="52" height="52" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="8.2" stroke="currentColor" stroke-width="2.2"/><circle cx="12" cy="12" r="3.4" fill="currentColor"/></svg>
+  </span>
+  <h1>{{ cfg.shop_name }}</h1>
+  <div class="tagline">{{ cfg.receipt_tagline }}</div>
+  <div class="kicker">Our Menu</div>
+</header>
+
+<main class="menu-wrap">
+  <div class="menu-grid">
+    {% for s in sections %}
+    <section class="section" aria-label="{{ s.name }}">
+      <div class="section-head">
+        <span class="name">{{ s.name }}</span>
+        <span class="diamond" aria-hidden="true"></span>
+      </div>
+      {% for it in grouped[s.id] %}
+      <div class="item {{ 'soldout' if it.stock_qty <= 0 }}">
+        <div class="item-row">
+          <span class="pname">{{ it.name }}</span>
+          <span class="leader" aria-hidden="true"></span>
+          <span class="price">{{ money(it.price) }}</span>
+        </div>
+        {% if it.description %}<p class="desc">{{ it.description }}</p>{% endif %}
+        <div class="flags">
+          {% if it.featured %}<span class="flag featured">House favorite</span>{% endif %}
+          {% if it.stock_qty <= 0 %}<span class="flag out">Sold out</span>{% endif %}
+        </div>
+      </div>
+      {% endfor %}
+    </section>
+    {% else %}
+    <div class="section" style="text-align:center;color:var(--muted);grid-column:1/-1;padding:40px 0">
+      <p style="font-family:var(--serif);font-style:italic;font-size:1.1rem">Our menu is being prepared — check back soon.</p>
+    </div>
+    {% endfor %}
+  </div>
+</main>
+
+<footer class="menu-footer">
+  <div class="msg">{{ cfg.receipt_footer }}</div>
+  <div><a class="staff" href="/">Staff sign-in</a></div>
+</footer>
+
+<button class="print-btn no-print" onclick="window.print()">Print menu</button>
+
+</body>
+</html>

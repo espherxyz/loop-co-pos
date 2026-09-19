@@ -1,0 +1,91 @@
+{% extends "base.html" %}
+{% from "_icons.html" import icon %}
+{% block title %}Orders{% endblock %}
+{% block body %}
+
+<div class="page-head">
+  <div>
+    <h1>Orders</h1>
+    <p>Last 50 orders — hold tabs can be resumed or discarded, completed orders can be voided or refunded</p>
+  </div>
+</div>
+
+<div class="pills" style="margin-bottom:16px">
+  <a href="/orders" class="pill {{ 'active' if not status_filter }}">All</a>
+  {% for s in ['completed', 'pending', 'voided', 'refunded'] %}
+  <a href="/orders?status={{ s }}" class="pill {{ 'active' if status_filter == s }}">{{ s }} <span class="count">{{ counts.get(s, 0) }}</span></a>
+  {% endfor %}
+</div>
+
+<div class="card">
+  <div class="table-wrap">
+    <table class="data">
+      <thead>
+        <tr><th>#</th><th>Order</th><th>Status</th><th class="num">Subtotal</th><th class="num">Discount</th><th class="num">Tax</th><th class="num">Total</th><th class="num">Tendered</th><th class="num">Change</th><th>Time</th><th>Actions</th></tr>
+      </thead>
+      <tbody>
+        {% for r in rows %}
+        <tr>
+          <td>{{ r.id }}</td>
+          <td class="money">{{ r.order_number }}</td>
+          <td><span class="badge status-{{ r.status }}">{{ r.status }}</span></td>
+          <td class="num money">{{ money(r.subtotal) }}</td>
+          <td class="num money">{{ money(r.discount_amount) }}</td>
+          <td class="num money">{{ money(r.tax_amount) }}</td>
+          <td class="num money" style="font-weight:700">{{ money(r.total) }}</td>
+          <td class="num money">{{ money(r.tendered) }}</td>
+          <td class="num money">{{ money(r.change) }}</td>
+          <td class="time">{{ r.timestamp[:16] }}</td>
+          <td>
+            <div class="actions-row">
+              <a href="/receipt?order_id={{ r.id }}" class="btn btn-outline btn-sm">{{ icon('print', 'icon-sm') }} Receipt</a>
+              {% if r.status == 'completed' %}
+              <details class="menu">
+                <summary>{{ icon('close', 'icon-sm') }} Void</summary>
+                <div class="menu-panel">
+                  <form method="POST" action="/void-order">
+                    <input type="hidden" name="order_id" value="{{ r.id }}">
+                    <label>Reason
+                      <input name="reason" value="Voided by cashier">
+                    </label>
+                    <button type="submit" class="btn btn-danger btn-sm" onclick="return confirm('Void this order? Stock will be restored.')">Confirm void</button>
+                  </form>
+                </div>
+              </details>
+              <details class="menu">
+                <summary>{{ icon('cash', 'icon-sm') }} Refund</summary>
+                <div class="menu-panel">
+                  <form method="POST" action="/refund-order">
+                    <input type="hidden" name="order_id" value="{{ r.id }}">
+                    <label>Amount ({{ cfg.currency_symbol }})
+                      <input type="number" name="amount_dollars" value="{{ '%.2f'|format(r.total/100) }}" min="0.01" max="{{ '%.2f'|format(r.total/100) }}" step="0.01" required>
+                    </label>
+                    <label>Reason
+                      <input name="reason" value="Refunded by cashier">
+                    </label>
+                    <button type="submit" class="btn btn-danger btn-sm" onclick="return confirm('Refund this order? Stock will be restored proportionally.')">Confirm refund</button>
+                  </form>
+                </div>
+              </details>
+              {% elif r.status == 'pending' %}
+              <form method="POST" action="/resume-hold">
+                <input type="hidden" name="order_id" value="{{ r.id }}">
+                <button type="submit" class="btn btn-primary btn-sm">{{ icon('pos', 'icon-sm') }} Resume</button>
+              </form>
+              <form method="POST" action="/discard-hold">
+                <input type="hidden" name="order_id" value="{{ r.id }}">
+                <button type="submit" class="btn btn-ghost-danger btn-sm" onclick="return confirm('Discard this held order? Its items will be removed.')">{{ icon('close', 'icon-sm') }} Discard</button>
+              </form>
+              {% elif r.status == 'voided' %}
+              {% endif %}
+            </div>
+          </td>
+        </tr>
+        {% else %}
+        <tr class="empty"><td colspan="11">No orders{% if status_filter %} with status “{{ status_filter }}”{% endif %} — open the <a href="/pos">POS</a> to start selling.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

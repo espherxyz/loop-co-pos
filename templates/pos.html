@@ -1,0 +1,131 @@
+{% extends "base.html" %}
+{% from "_icons.html" import icon %}
+{% block title %}POS{% endblock %}
+{% block body %}
+
+<div class="pos-layout">
+  <section aria-label="Menu">
+    <div class="pos-tools">
+      <h1 style="margin:0">{{ icon('pos') }} Menu</h1>
+      <form method="GET" action="/pos" class="search" role="search">
+        {{ icon('search', 'icon-sm') }}
+        <input type="search" name="q" value="{{ q }}" placeholder="Search products…" aria-label="Search products">
+        {% if selected_category %}<input type="hidden" name="category" value="{{ selected_category }}">{% endif %}
+      </form>
+    </div>
+
+    <div class="pills" style="margin-bottom:16px" role="tablist" aria-label="Category filter">
+      <a href="/pos{% if q %}?q={{ q }}{% endif %}" class="pill {{ 'active' if not selected_category }}">All</a>
+      {% for c in cats %}
+      <a href="/pos?category={{ c.id }}{% if q %}&amp;q={{ q }}{% endif %}" class="pill {{ 'active' if selected_category == c.id }}">{{ c.name }}</a>
+      {% endfor %}
+    </div>
+
+    {% if prods %}
+    <div class="tile-grid">
+      {% for p in prods %}
+      <form method="POST" action="/add-item">
+        <input type="hidden" name="product_id" value="{{ p.id }}">
+        <input type="hidden" name="qty" value="1">
+        <button type="submit" class="tile" {% if not p.active %}disabled{% endif %}>
+          <span class="cat">{{ p.cat }}</span>
+          <span class="name">{{ p.name }}</span>
+          <span class="price money">{{ money(p.price) }}</span>
+          <span class="stock">Stock {{ p.stock_qty }}
+            {% if p.stock_qty <= p.low_stock_threshold %}<span class="badge low">low</span>{% endif %}
+          </span>
+          <span class="plus" aria-hidden="true">{{ icon('plus', 'icon-sm') }}</span>
+        </button>
+      </form>
+      {% endfor %}
+    </div>
+    {% else %}
+    <div class="empty-state card card-pad">
+      {{ icon('search', 'icon') }}
+      <h3>No products found</h3>
+      <p>{% if q %}Nothing matches “{{ q }}” — try another search.{% else %}Add your first product on the <a href="/products">Products</a> page.{% endif %}</p>
+    </div>
+    {% endif %}
+  </section>
+
+  <aside class="cart-panel" aria-label="Cart and checkout">
+    <div class="card">
+      <div class="card-head">
+        <h2 style="display:flex;align-items:center;gap:8px">{{ icon('cart') }} Cart</h2>
+        {% if cart_items %}<span class="badge status-completed">{{ cart_items|length }} line{{ 's' if cart_items|length != 1 }}</span>{% endif %}
+      </div>
+      <div class="card-body">
+        {% if cart_items %}
+        <div class="cart-lines">
+          {% for item in cart_items %}
+          <div class="cart-line">
+            <div class="info">
+              <div class="name">{{ item.name }}</div>
+              <div class="unit money">{{ money(item.price) }} each</div>
+            </div>
+            <div class="stepper" aria-label="Quantity for {{ item.name }}">
+              <form method="POST" action="/update-cart"><input type="hidden" name="cart_item_id" value="{{ item.cart_item_id }}"><input type="hidden" name="qty" value="{{ item.qty - 1 }}"><button type="submit" aria-label="Decrease quantity">−</button></form>
+              <span class="qty">{{ item.qty }}</span>
+              <form method="POST" action="/update-cart"><input type="hidden" name="cart_item_id" value="{{ item.cart_item_id }}"><input type="hidden" name="qty" value="{{ item.qty + 1 }}"><button type="submit" aria-label="Increase quantity">+</button></form>
+            </div>
+            <span class="line-total money">{{ money(item.qty*item.price) }}</span>
+            <form method="POST" action="/remove-item">
+              <input type="hidden" name="cart_item_id" value="{{ item.cart_item_id }}">
+              <button type="submit" class="btn btn-ghost-danger btn-sm" style="padding:5px 8px" aria-label="Remove {{ item.name }}">{{ icon('close', 'icon-sm') }}</button>
+            </form>
+          </div>
+          {% endfor %}
+        </div>
+
+        <div class="totals">
+          <div class="row"><span>Subtotal</span><span class="money">{{ money(subtotal) }}</span></div>
+          <div class="row"><span>Tax ({{ "%.1f"|format(tax_rate*100) }}%)</span><span class="money">{{ money(tax) }}</span></div>
+        </div>
+        {% else %}
+        <div class="empty-state">
+          {{ icon('cart', 'icon') }}
+          <h3>Cart empty</h3>
+          <p>Add items from the menu — tap any product tile.</p>
+        </div>
+        {% endif %}
+
+        {% if cart_empty %}
+        <div class="amount-due" style="opacity:.55"><span class="lbl">Amount due</span><span class="amt money">{{ money(0) }}</span></div>
+        <button class="btn btn-primary btn-lg" disabled>Charge</button>
+        {% else %}
+        <div class="amount-due"><span class="lbl">Amount due</span><span class="amt money">{{ money(total) }}</span></div>
+        <form method="POST" action="/checkout">
+          <div class="field" style="margin-bottom:8px">
+            <label>Discount ({{ cfg.currency_symbol }}) <span class="hint">applied before tax</span>
+              <input type="number" name="discount_dollars" value="0" min="0" step="0.01">
+            </label>
+          </div>
+          <div class="field" style="margin-bottom:8px">
+            <label>Cash tendered ({{ cfg.currency_symbol }})
+              <input type="number" name="tendered_dollars" value="{{ '%.2f'|format(total/100) }}" min="0" step="0.01" required>
+            </label>
+          </div>
+          <div class="field">
+            <label>Method
+              <select name="payment_method">
+                <option value="cash">Cash</option>
+                <option value="card">Card</option>
+                <option value="other">Other</option>
+              </select>
+            </label>
+          </div>
+          {% if has_inactive %}
+          <p class="hint" style="color:var(--danger)">Cart contains an inactive product — remove it before checkout.</p>
+          {% endif %}
+          <button type="submit" class="btn btn-primary btn-lg">Charge {{ money(total) }}</button>
+        </form>
+        <form method="POST" action="/hold-order" style="margin-top:10px">
+          <button type="submit" class="btn btn-outline btn-block">{{ icon('orders', 'icon-sm') }} Hold order (pay later)</button>
+        </form>
+        {% endif %}
+      </div>
+    </div>
+    <p class="no-print" style="text-align:center;margin-top:10px"><a href="/receipt">{{ icon('print', 'icon-sm') }} Latest receipt</a></p>
+  </aside>
+</div>
+{% endblock %}

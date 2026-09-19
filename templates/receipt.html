@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+{% from "_icons.html" import icon %}
+{% block title %}Receipt{% endblock %}
+{% block body %}
+
+<div class="receipt-page">
+  <div class="receipt">
+    <div class="receipt-head">
+      <span class="badge-top badge {{ status_class }}">{{ status_label }}</span>
+      <div class="shop-name">{{ cfg.shop_name }}</div>
+      <div class="tagline">{{ cfg.receipt_tagline }}</div>
+      <div class="meta"><span class="money">{{ order.order_number }}</span> · {{ order.timestamp[:16] }}</div>
+    </div>
+
+    {% if order.status == 'voided' %}
+    <div class="banner void">{{ icon('warn') }}<span><b>VOIDED</b>{% if void_info %}<br>Reason: {{ void_info.reason }}{% endif %}</span></div>
+    {% elif order.status == 'refunded' %}
+    <div class="banner refund">{{ icon('warn') }}<span><b>REFUNDED</b>{% if refund_info %}<br>Reason: {{ refund_info.reason }}<br>Refunded amount: {{ money(refund_info.amount) }}{% endif %}</span></div>
+    {% elif order.status == 'pending' %}
+    <div class="banner pending">{{ icon('warn') }}<span><b>PENDING</b> — held for payment later</span></div>
+    {% endif %}
+
+    <table>
+      <thead><tr><th>Item</th><th class="num">Qty</th><th class="num">Unit</th><th class="num">Line</th></tr></thead>
+      <tbody>
+        {% for item in items %}
+        <tr>
+          <td>{{ item.name }}</td>
+          <td class="num">{{ item.qty }}</td>
+          <td class="num money">{{ money(item.unit_price) }}</td>
+          <td class="num money">{{ money(item.qty*item.unit_price) }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+
+    <div class="sums">
+      <div class="row"><span>Subtotal</span><span class="money">{{ money(order.subtotal) }}</span></div>
+      {% if order.discount_amount %}<div class="row"><span>Discount</span><span class="money">−{{ money(order.discount_amount) }}</span></div>{% endif %}
+      <div class="row"><span>Tax</span><span class="money">{{ money(order.tax_amount) }}</span></div>
+      <div class="row grand"><span>Total</span><span class="money">{{ money(order.total) }}</span></div>
+    </div>
+
+    {% if payment %}
+    <div class="pay">
+      <span>{{ payment.method|capitalize }} · Tendered <span class="money">{{ money(payment.tendered) }}</span></span>
+      <span>Change <b class="money">{{ money(payment.change) }}</b></span>
+    </div>
+    {% endif %}
+
+    <div class="thanks">
+      <p class="loop">{{ cfg.receipt_footer }}</p>
+      <p class="no-print" style="margin-top:8px">
+        <a href="/" class="btn btn-outline btn-sm">{{ icon('back', 'icon-sm') }} Dashboard</a>
+        <a href="#" class="btn btn-primary btn-sm" onclick="window.print();return false;">{{ icon('print', 'icon-sm') }} Print</a>
+      </p>
+    </div>
+  </div>
+</div>
+{% endblock %}

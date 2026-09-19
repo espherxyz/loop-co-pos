@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+{% from "_icons.html" import icon %}
+{% block title %}Settings{% endblock %}
+{% block body %}
+
+<div class="page-head">
+  <div>
+    <h1>Settings</h1>
+    <p>Everything below is yours to change — saved locally, applied instantly across the app</p>
+  </div>
+</div>
+
+<form method="POST" action="/settings" style="max-width:640px">
+  <div class="card" style="margin-bottom:20px">
+    <div class="card-head"><h2>{{ icon('settings') }} Shop identity</h2></div>
+    <div class="card-body">
+      <div class="field">
+        <label>Shop name <span class="hint">shown in the top bar, browser title and receipts</span>
+          <input name="shop_name" value="{{ cfg.shop_name }}" maxlength="40" required>
+        </label>
+      </div>
+      <div class="field">
+        <label>Tax rate (%) <span class="hint">applied at checkout; existing orders keep their original tax · prices show in Philippine peso (₱)</span>
+          <input type="number" name="tax_rate_percent" value="{{ '%.2f'|format(cfg.tax_rate*100) }}" min="0" max="100" step="0.01" style="width:120px">
+        </label>
+      </div>
+    </div>
+  </div>
+
+  <div class="card" style="margin-bottom:20px">
+    <div class="card-head"><h2>{{ icon('print') }} Receipt</h2></div>
+    <div class="card-body">
+      <div class="field">
+        <label>Tagline <span class="hint">italic line under the shop name</span>
+          <input name="receipt_tagline" value="{{ cfg.receipt_tagline }}" maxlength="120">
+        </label>
+      </div>
+      <div class="field">
+        <label>Footer message <span class="hint">closing line at the bottom of every receipt</span>
+          <input name="receipt_footer" value="{{ cfg.receipt_footer }}" maxlength="160">
+        </label>
+      </div>
+      <div class="field">
+        <label>Order number prefix <span class="hint">orders are numbered {{ cfg.order_prefix }}YYYYMMDD-HHMMSS</span>
+          <input name="order_prefix" value="{{ cfg.order_prefix }}" maxlength="8" style="width:120px">
+        </label>
+      </div>
+    </div>
+  </div>
+
+  <button type="submit" class="btn btn-primary btn-lg">{{ icon('settings') }} Save settings</button>
+</form>
+
+<div class="card" style="max-width:640px;margin-top:28px;border-color:#EFC5BD">
+  <div class="card-head" style="border-bottom-color:#EFC5BD"><h2 style="color:var(--danger)">Danger zone</h2></div>
+  <div class="card-body">
+    <p style="margin-top:0">Clear <b>all sales history</b> — orders, payments, refunds, voids, audit events and active carts — and reset every product's stock to its seed level. Products and categories are kept. This cannot be undone.</p>
+    <form method="POST" action="/settings/reset">
+      <button type="submit" class="btn btn-danger" onclick="return confirm('Delete ALL sales history and reset stock? This cannot be undone.')">{{ icon('warn') }} Clear sales history</button>
+    </form>
+  </div>
+</div>
+{% endblock %}

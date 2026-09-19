@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{% block title %}{{ cfg.shop_name }}{% endblock %} — {{ cfg.shop_name }} POS</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Ccircle cx='12' cy='12' r='11' fill='%231B2E1B'/%3E%3Ccircle cx='12' cy='12' r='7' fill='none' stroke='%23C2A05A' stroke-width='2'/%3E%3Ccircle cx='12' cy='12' r='3' fill='%23C2A05A'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/app.css') }}">
+</head>
+<body>
+{% from "_icons.html" import icon, loop_glyph %}
+
+<header class="topnav">
+  <a class="brand" href="/" aria-label="{{ cfg.shop_name }} home">{{ loop_glyph() }}{{ cfg.shop_name }}</a>
+  <nav aria-label="Primary">
+    <a href="/" class="{{ 'active' if request.path == '/' }}">{{ icon('dashboard', 'icon-sm') }}<span class="nav-label">Dashboard</span></a>
+    <a href="/pos" class="{{ 'active' if request.path == '/pos' }}">{{ icon('pos', 'icon-sm') }}<span class="nav-label">POS</span></a>
+    <a href="/orders" class="{{ 'active' if request.path == '/orders' }}">{{ icon('orders', 'icon-sm') }}<span class="nav-label">Orders</span></a>
+    <a href="/products" class="{{ 'active' if request.path == '/products' }}">{{ icon('products', 'icon-sm') }}<span class="nav-label">Products</span></a>
+    <a href="/reports" class="{{ 'active' if request.path == '/reports' }}">{{ icon('reports', 'icon-sm') }}<span class="nav-label">Reports</span></a>
+    <a href="/settings" class="{{ 'active' if request.path == '/settings' }}">{{ icon('settings', 'icon-sm') }}<span class="nav-label">Settings</span></a>
+  </nav>
+  <div class="spacer"></div>
+  <a href="/pos" class="btn btn-brass btn-sm">{{ icon('plus', 'icon-sm') }}New sale</a>
+</header>
+
+<main class="container">
+{% block body %}{% endblock %}
+</main>
+
+<footer class="footer no-print">
+  <span class="brandline">{{ cfg.shop_name }}</span> — {{ cfg.receipt_tagline }} · Local-first POS · no cloud, no tracking
+</footer>
+
+{% with msgs = get_flashed_messages(with_categories=true) %}
+  {% if msgs %}
+  <div class="toasts" role="status" aria-live="polite">
+    {% for cat, m in msgs %}<div class="toast {{ cat }}">{{ m }}</div>{% endfor %}
+  </div>
+  {% endif %}
+{% endwith %}
+
+<script>
+  setTimeout(function () {
+    document.querySelectorAll('.toast').forEach(function (t) {
+      t.classList.add('hide');
+      setTimeout(function () { t.remove(); }, 500);
+    });
+  }, 4200);
+</script>
+</body>
+</html>

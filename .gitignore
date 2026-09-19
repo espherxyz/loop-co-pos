@@ -1,0 +1,23 @@
+# --- runtime data (never publish) ---
+coffee.sqlite3
+*.sqlite3
+*.sqlite3-journal
+*.sqlite3-wal
+*.db
+
+# --- logs & local tooling artifacts ---
+*.log
+server.log
+app.log
+test_monitor.log
+
+# --- python / tooling caches ---
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.venv/
+venv/
+
+# --- OS noise ---
+Thumbs.db
+.DS_Store

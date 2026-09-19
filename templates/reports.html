@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% from "_icons.html" import icon %}
+{% block title %}Reports{% endblock %}
+{% block body %}
+
+<div class="page-head">
+  <div>
+    <h1>Reports</h1>
+    <p>Today's numbers — shop-local day, completed orders only for revenue</p>
+  </div>
+  <a href="/export" class="btn btn-outline">{{ icon('download') }} Orders CSV</a>
+</div>
+
+<div class="stats">
+  <div class="stat"><div class="label">{{ icon('cash', 'icon-sm') }} Sales</div><div class="value money">{{ money(sales) }}</div><div class="sub">today, completed</div></div>
+  <div class="stat accent"><div class="label">{{ icon('orders', 'icon-sm') }} Orders</div><div class="value">{{ orders_cnt }}</div><div class="sub">avg {{ money(avg) }}</div></div>
+  <div class="stat"><div class="label">Discounts</div><div class="value money">{{ money(discount_total) }}</div><div class="sub">given today</div></div>
+  <div class="stat negative"><div class="label">Refunds</div><div class="value money">{{ money(refund_total) }}</div><div class="sub">{{ refund_count }} refund{{ 's' if refund_count != 1 }}</div></div>
+  <div class="stat negative"><div class="label">Voids</div><div class="value">{{ void_count }}</div><div class="sub">{{ money(void_total) }} reversed</div></div>
+</div>
+
+<div class="card" style="margin-bottom:20px">
+  <div class="card-head">
+    <h2>Sales by product</h2>
+    <span class="hint">completed orders · excludes voided/refunded</span>
+  </div>
+  <div class="card-body">
+    {% if by_prod %}
+      {% set max_rev = (by_prod | map(attribute='rev') | max) %}
+      {% for p in by_prod %}
+      <div class="bar-row">
+        <span class="pname">{{ p.name }}</span>
+        <span class="bar-track"><i class="bar-fill" style="width: {{ (p.rev / max_rev * 100) | round(1) }}%"></i></span>
+        <span class="rev">{{ money(p.rev) }} <span class="hint">{{ p.qty }}×</span></span>
+      </div>
+      {% endfor %}
+    {% else %}
+      <div class="empty-state" style="padding:14px">{{ icon('reports', 'icon') }}<h3>No sales yet today</h3><p>Revenue by product will appear here after the first completed order.</p></div>
+    {% endif %}
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-head"><h2>Reconciliation</h2></div>
+  <div class="card-body">
+    <p>Discounts today: <b class="money">{{ money(discount_total) }}</b> ·
+       Refunds today: <b class="money">{{ money(refund_total) }}</b> ({{ refund_count }}) ·
+       Voids today: <b>{{ void_count }}</b> (<span class="money">{{ money(void_total) }}</span>)</p>
+    <p class="hint">Refunds and voids are sourced from the refunds/voids tables and order status records — not inferred — so POS totals reconcile against physical counts.</p>
+  </div>
+</div>
+{% endblock %}

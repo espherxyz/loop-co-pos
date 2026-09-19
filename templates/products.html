@@ -1,0 +1,117 @@
+{% extends "base.html" %}
+{% from "_icons.html" import icon %}
+{% block title %}Products{% endblock %}
+{% block body %}
+
+<div class="page-head">
+  <div>
+    <h1>Products</h1>
+    <p>Your menu, your rules — add, edit, reprice, restock or retire anything</p>
+  </div>
+  <a href="/pos" class="btn btn-primary">{{ icon('pos') }} Sell</a>
+</div>
+
+<div style="display:grid;grid-template-columns:1fr 300px;gap:20px;align-items:start" class="mgmt-grid">
+  <section>
+    <div class="card" style="margin-bottom:20px">
+      <div class="card-head"><h2>{{ icon('plus', 'icon-sm') }} Add product</h2></div>
+      <div class="card-body">
+        <form method="POST" action="/products/add">
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:0 14px">
+            <div class="field"><label>Name <input name="name" maxlength="60" required></label></div>
+            <div class="field"><label>Category
+              <select name="category_id" required>
+                {% for c in cats %}<option value="{{ c.id }}">{{ c.name }}</option>{% endfor %}
+              </select></label>
+            </div>
+            <div class="field"><label>Price ({{ cfg.currency_symbol }}) <input type="number" name="price_dollars" min="0.01" step="0.01" required></label></div>
+            <div class="field"><label>Stock <input type="number" name="stock_qty" value="0" min="0" max="9999" required></label></div>
+            <div class="field"><label>Low-stock at <input type="number" name="low_stock_threshold" value="5" min="0" max="999"></label></div>
+            <div class="field"><label style="display:flex;gap:8px;align-items:center;margin-top:24px"><input type="checkbox" name="active" checked style="width:auto"> Active (sellable)</label></div>
+          </div>
+          <div class="field"><label>Description <span class="hint">shown on the customer menu</span>
+            <input name="description" maxlength="200" placeholder="e.g. Silky steamed milk over a double shot"></label></div>
+          <div class="field"><label style="display:flex;gap:8px;align-items:center"><input type="checkbox" name="featured" style="width:auto"> House favorite (highlight on menu)</label></div>
+          <button type="submit" class="btn btn-primary btn-sm">{{ icon('plus', 'icon-sm') }} Add product</button>
+        </form>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-head"><h2>Catalog</h2><span class="hint">{{ rows|length }} product{{ 's' if rows|length != 1 }}</span></div>
+      <div class="table-wrap">
+        <table class="data">
+          <thead><tr><th>Product</th><th>Category</th><th class="num">Price</th><th class="num">Stock</th><th>Status</th><th>Actions</th></tr></thead>
+          <tbody>
+            {% for r in rows %}
+            <tr>
+              <td style="font-weight:600;color:var(--forest)">{{ r.name }}{% if r.featured %} <span class="badge status-pending" style="text-transform:none">favorite</span>{% endif %}</td>
+              <td><span class="badge status-completed" style="text-transform:none">{{ r.cat }}</span></td>
+              <td class="num money" style="font-weight:700;color:var(--brass-strong)">{{ money(r.price) }}</td>
+              <td class="num">{{ r.stock_qty }}
+                {% if r.stock_qty <= r.low_stock_threshold %}<span class="badge low">low</span>{% endif %}
+              </td>
+              <td>{{ 'Yes' if r.active else 'No' }}</td>
+              <td>
+                <div class="actions-row">
+                  <details class="menu">
+                    <summary>{{ icon('settings', 'icon-sm') }} Edit</summary>
+                    <div class="menu-panel" style="width:300px">
+                      <form method="POST" action="/products/edit">
+                        <input type="hidden" name="product_id" value="{{ r.id }}">
+                        <label>Name <input name="name" value="{{ r.name }}" maxlength="60" required></label>
+                        <label>Category
+                          <select name="category_id">
+                            {% for c in cats %}<option value="{{ c.id }}" {{ 'selected' if c.id == r.category_id }}>{{ c.name }}</option>{% endfor %}
+                          </select></label>
+                        <label>Price ({{ cfg.currency_symbol }}) <input type="number" name="price_dollars" value="{{ '%.2f'|format(r.price/100) }}" min="0.01" step="0.01" required></label>
+                        <label>Stock <input type="number" name="stock_qty" value="{{ r.stock_qty }}" min="0" max="9999"></label>
+                        <label>Low-stock at <input type="number" name="low_stock_threshold" value="{{ r.low_stock_threshold }}" min="0" max="999"></label>
+                        <label style="display:flex;gap:8px;align-items:center"><input type="checkbox" name="active" {{ 'checked' if r.active }} style="width:auto"> Active</label>
+                        <label>Description
+                          <input name="description" value="{{ r.description }}" maxlength="200"></label>
+                        <label style="display:flex;gap:8px;align-items:center"><input type="checkbox" name="featured" {{ 'checked' if r.featured }} style="width:auto"> House favorite</label>
+                        <button type="submit" class="btn btn-primary btn-sm">Save changes</button>
+                      </form>
+                    </div>
+                  </details>
+                  <form method="POST" action="/products/delete">
+                    <input type="hidden" name="product_id" value="{{ r.id }}">
+                    <button type="submit" class="btn btn-ghost-danger btn-sm" onclick="return confirm('Delete {{ r.name }}? Products with sales history cannot be deleted.')">{{ icon('close', 'icon-sm') }}</button>
+                  </form>
+                </div>
+              </td>
+            </tr>
+            {% else %}
+            <tr class="empty"><td colspan="6">No products yet — add your first one above.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <aside>
+    <div class="card">
+      <div class="card-head"><h2>Categories</h2></div>
+      <div class="card-body">
+        {% for c in cats %}
+        <div class="cart-line">
+          <div class="info"><div class="name">{{ c.name }}</div><div class="unit">{{ c.n }} product{{ 's' if c.n != 1 }}</div></div>
+          <form method="POST" action="/categories/delete">
+            <input type="hidden" name="category_id" value="{{ c.id }}">
+            <button type="submit" class="btn btn-ghost-danger btn-sm" style="padding:5px 8px" onclick="return confirm('Delete category {{ c.name }}? Only empty categories can be deleted.')" aria-label="Delete {{ c.name }}">{{ icon('close', 'icon-sm') }}</button>
+          </form>
+        </div>
+        {% else %}
+        <p class="hint">No categories yet.</p>
+        {% endfor %}
+        <form method="POST" action="/categories/add" style="margin-top:12px">
+          <div class="field"><label>New category <input name="name" maxlength="40" required></label></div>
+          <button type="submit" class="btn btn-outline btn-sm btn-block">{{ icon('plus', 'icon-sm') }} Add category</button>
+        </form>
+      </div>
+    </div>
+  </aside>
+</div>
+{% endblock %}

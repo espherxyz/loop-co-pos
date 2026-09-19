@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% from "_icons.html" import icon, loop_glyph %}
+{% block title %}Something went wrong{% endblock %}
+{% block body %}
+<div class="error-wrap">
+  <div class="code">{{ status }}</div>
+  <h1>{{ heading if heading else ('Order not found' if status == 404 else 'Request not completed') }}</h1>
+  <div class="msg">{{ message }}</div>
+  <div class="actions-row" style="justify-content:center">
+    <a class="btn btn-outline" href="/">{{ icon('back') }}Dashboard</a>
+    <a class="btn btn-primary" href="/pos">{{ icon('pos') }}Back to POS</a>
+  </div>
+</div>
+{% endblock %}
