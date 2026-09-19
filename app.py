@@ -14,6 +14,10 @@ def create_app(test_config=None):
     # Signs the session cookie. The built-in default is for single-user local
     # use; set COFFEE_POS_SECRET when running anywhere shared or exposed.
     app.secret_key = os.environ.get("COFFEE_POS_SECRET", "coffee-pos-v2-secret-key")
+    # Staff login. When POS_PASSWORD is unset (default local mode) the app is
+    # open as before; when set, every staff route requires the password and
+    # /menu + /health stay public.
+    app.config["POS_PASSWORD"] = os.environ.get("POS_PASSWORD")
     if test_config:
         app.config.update(test_config)
 
@@ -78,7 +82,46 @@ def create_app(test_config=None):
         def money(cents):
             sym = cfg["currency_symbol"] if "currency_symbol" in cfg.keys() else "$"
             return "%s%.2f" % (sym or "$", (cents or 0) / 100.0)
-        return {"cfg": cfg, "money": money}
+        return {"cfg": cfg, "money": money,
+                "auth_enabled": bool(app.config.get("POS_PASSWORD")),
+                "logged_in": bool(session.get("staff_ok"))}
+
+    PUBLIC_PATHS = {"/health", "/menu", "/login", "/logout"}
+
+    @app.before_request
+    def require_staff_login():
+        if not app.config.get("POS_PASSWORD"):
+            return None  # local mode: auth disabled
+        if request.path in PUBLIC_PATHS or request.path.startswith("/static/"):
+            return None
+        if session.get("staff_ok"):
+            return None
+        return redirect(url_for("login", next=request.path))
+
+    @app.route("/login", methods=["GET", "POST"])
+    def login():
+        if not app.config.get("POS_PASSWORD"):
+            return redirect(url_for("dashboard"))
+        if request.method == "POST":
+            import hmac
+            given = request.form.get("password", "")
+            if hmac.compare_digest(given, app.config["POS_PASSWORD"]):
+                session["staff_ok"] = True
+                session.modified = True
+                nxt = request.args.get("next") or request.form.get("next") or "/"
+                if not nxt.startswith("/") or nxt.startswith("//"):
+                    nxt = "/"
+                flash("Welcome back", "success")
+                return redirect(nxt)
+            flash("Wrong password", "error")
+        return render_template("login.html", next=request.args.get("next", ""))
+
+    @app.get("/logout")
+    def logout():
+        session.clear()
+        session.modified = True
+        flash("Signed out", "success")
+        return redirect(url_for("login"))
 
     def next_order_number(db, prefix):
         base = prefix + datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
@@ -1040,8 +1083,19 @@ def create_app(test_config=None):
 
     with app.app_context():
         init_db()
+        # Fresh-deploy convenience: with AUTO_SEED=1 (set by render.yaml), an
+        # empty database is seeded with the starter menu on first boot. Tests
+        # and existing databases are never touched.
+        if os.environ.get("AUTO_SEED") == "1":
+            db = get_db()
+            if db.execute("SELECT COUNT(*) FROM products").fetchone()[0] == 0:
+                import seed as seed_mod
+                seed_mod.seed(db)
+
     return app
 
 
 if __name__ == "__main__":
-    create_app().run(host="127.0.0.1", port=5000)
+    # Local development stays localhost-only. Public binds happen through the
+    # WSGI server configured in render.yaml.
+    create_app().run(host="127.0.0.1", port=int(os.environ.get("PORT", "5000")))

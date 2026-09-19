@@ -48,11 +48,11 @@ PRODUCTS = [
 ]
 
 
-def main():
-    db = sqlite3.connect(DB_PATH)
-    db.execute("PRAGMA foreign_keys=ON")
+def seed(db):
+    """Seed an open sqlite3 connection (schema + settings + menu). Idempotent."""
     schema = (Path(__file__).resolve().parent / "schema.sql").read_text(encoding="utf-8")
     db.executescript(schema)
+    db.execute("PRAGMA foreign_keys=ON")
 
     db.execute(
         "INSERT OR IGNORE INTO settings (id, shop_name, currency_symbol, tax_rate) VALUES (?,?,?,?)",
@@ -68,6 +68,10 @@ def main():
         )
     db.commit()
 
+
+def main():
+    db = sqlite3.connect(DB_PATH)
+    seed(db)
     n_cat = db.execute("SELECT COUNT(*) FROM categories").fetchone()[0]
     n_prod = db.execute("SELECT COUNT(*) FROM products").fetchone()[0]
     s = db.execute("SELECT shop_name, currency_symbol, tax_rate FROM settings WHERE id=1").fetchone()

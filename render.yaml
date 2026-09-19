@@ -1,0 +1,18 @@
+# Render blueprint — deploys Loop Co POS as a free web service.
+# In Render: New + -> Blueprint -> pick this repo -> set your POS_PASSWORD.
+services:
+  - type: web
+    name: loop-co-pos
+    runtime: python
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn --bind "0.0.0.0:$PORT" "app:create_app()"
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.12.10
+      - key: AUTO_SEED
+        value: "1"
+      - key: COFFEE_POS_SECRET
+        generateValue: true
+      - key: POS_PASSWORD
+        sync: false

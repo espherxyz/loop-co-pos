@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% from "_icons.html" import icon, loop_glyph %}
+{% block title %}Staff login{% endblock %}
+{% block body %}
+<div class="error-wrap">
+  <div style="color:var(--brass);margin-bottom:8px">{{ loop_glyph() }}</div>
+  <h1>Staff sign-in</h1>
+  <p style="color:var(--muted);margin:4px 0 18px">Enter the POS password to continue.</p>
+  <form method="POST" action="/login" class="card card-pad" style="max-width:360px;margin:0 auto;text-align:left">
+    {% if next %}<input type="hidden" name="next" value="{{ next }}">{% endif %}
+    <div class="field">
+      <label>Password
+        <input type="password" name="password" autofocus required>
+      </label>
+    </div>
+    <button type="submit" class="btn btn-primary btn-block">{{ icon('pos') }} Sign in</button>
+  </form>
+  <p style="margin-top:16px"><a href="/menu">View the menu instead</a></p>
+</div>
+{% endblock %}

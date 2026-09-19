@@ -21,7 +21,15 @@
     <a href="/settings" class="{{ 'active' if request.path == '/settings' }}">{{ icon('settings', 'icon-sm') }}<span class="nav-label">Settings</span></a>
   </nav>
   <div class="spacer"></div>
+  {% if auth_enabled %}
+    {% if logged_in %}
+    <a href="/logout" class="btn btn-outline btn-sm" style="background:transparent;color:#E9E3D3;border-color:rgba(233,227,211,.4)">Sign out</a>
+    {% else %}
+    <a href="/login" class="btn btn-brass btn-sm">Staff login</a>
+    {% endif %}
+  {% else %}
   <a href="/pos" class="btn btn-brass btn-sm">{{ icon('plus', 'icon-sm') }}New sale</a>
+  {% endif %}
 </header>
 
 <main class="container">

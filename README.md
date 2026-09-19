@@ -108,6 +108,18 @@ Test databases are created fresh in temp dirs; tests insert their own fixtures a
 
 `app.py` signs session cookies with a built-in default key that is fine for single-user, localhost use — the intended mode for this app. If you ever expose it beyond your machine, set the `COFFEE_POS_SECRET` environment variable so sessions are signed with your own secret.
 
+## Deploy a public demo (free, Render)
+
+The repo ships with a `render.yaml` blueprint, so Render deploys it with a few clicks:
+
+1. Push this repo to GitHub (it already is: `espherxyz/loop-co-pos`)
+2. Create a free account at [render.com](https://render.com) **using your GitHub login**
+3. Dashboard → **New + → Blueprint** → select `loop-co-pos`
+4. When prompted for `POS_PASSWORD`, type the staff password you want — this protects the POS, orders, products, reports and settings behind a login
+5. Deploy. Your live demo appears at `https://loop-co-pos-xxxx.onrender.com`
+
+Behavior in the cloud: the customer menu (`/menu`) is public, everything else asks for the staff password; a fresh database auto-seeds with the starter menu (`AUTO_SEED=1`). The free tier sleeps after 15 minutes idle (first request then takes ~40s to wake) and the demo database resets on restarts — it's a demo, your real till stays local.
+
 ## License
 
 [MIT](LICENSE) — use it, fork it, sell coffee with it.
