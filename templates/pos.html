@@ -24,10 +24,13 @@
     {% if prods %}
     <div class="tile-grid">
       {% for p in prods %}
+      {% set cl = p.cat|lower %}
+      {% set cat_icon = 'coffee' if ('espresso' in cl or 'coffee' in cl) else ('tea' if ('tea' in cl or 'brew' in cl or 'chai' in cl) else ('pastry' if ('bak' in cl or 'pastry' in cl or 'food' in cl or 'cake' in cl) else 'box')) %}
       <form method="POST" action="/add-item">
         <input type="hidden" name="product_id" value="{{ p.id }}">
         <input type="hidden" name="qty" value="1">
         <button type="submit" class="tile" {% if not p.active %}disabled{% endif %}>
+          <span class="icon-chip" aria-hidden="true">{{ icon(cat_icon) }}</span>
           <span class="cat">{{ p.cat }}</span>
           <span class="name">{{ p.name }}</span>
           <span class="price money">{{ money(p.price) }}</span>
